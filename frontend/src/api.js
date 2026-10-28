@@ -4,7 +4,14 @@ async function request(path, options = {}) {
     ...options,
   });
   const data = await response.json().catch(() => ({}));
-  if (!response.ok) throw new Error(data.detail || "Request failed");
+  if (!response.ok) {
+    const detail = data.detail;
+    // FastAPI 422 errors are a list of {loc, msg}; turn them into readable text
+    const message = Array.isArray(detail)
+      ? detail.map((d) => `${d.loc?.[d.loc.length - 1] ?? "field"}: ${d.msg}`).join("; ")
+      : typeof detail === "string" ? detail : "Request failed";
+    throw new Error(message);
+  }
   return data;
 }
 
