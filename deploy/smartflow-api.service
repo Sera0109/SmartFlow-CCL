@@ -8,6 +8,9 @@ WorkingDirectory=/opt/smartflow/backend
 EnvironmentFile=/opt/smartflow/.env
 ExecStart=/opt/smartflow/backend/.venv/bin/uvicorn app.main:app --host 127.0.0.1 --port 8000
 Restart=on-failure
+Environment=SMARTFLOW_LOCAL=0
+StandardOutput=append:/var/log/smartflow-api.log
+StandardError=append:/var/log/smartflow-api.log
 
 [Install]
 WantedBy=multi-user.target

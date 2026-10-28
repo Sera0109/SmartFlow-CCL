@@ -1,7 +1,7 @@
 {
   "Version": "2012-10-17",
   "Statement": [
-    {"Effect": "Allow", "Action": ["ssm:GetParametersByPath"], "Resource": "arn:aws:ssm:ap-south-1:*:parameter/smartflow/*"},
+    {"Effect": "Allow", "Action": ["ssm:GetParameters", "ssm:GetParametersByPath"], "Resource": "arn:aws:ssm:ap-south-1:*:parameter/smartflow/*"},
     {"Effect": "Allow", "Action": ["s3:PutObject", "s3:GetObject"], "Resource": "arn:aws:s3:::REPLACE_WITH_BUCKET/proof/*"},
     {"Effect": "Allow", "Action": ["sqs:SendMessage", "sqs:ReceiveMessage", "sqs:DeleteMessage", "sqs:GetQueueAttributes"], "Resource": "REPLACE_WITH_SQS_QUEUE_ARN"},
     {"Effect": "Allow", "Action": ["sns:Publish"], "Resource": "REPLACE_WITH_SNS_TOPIC_ARN"},

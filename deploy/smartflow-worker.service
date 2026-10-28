@@ -8,6 +8,9 @@ WorkingDirectory=/opt/smartflow/backend
 EnvironmentFile=/opt/smartflow/.env
 ExecStart=/opt/smartflow/backend/.venv/bin/python -m app.worker
 Restart=on-failure
+Environment=SMARTFLOW_LOCAL=0
+StandardOutput=append:/var/log/smartflow-worker.log
+StandardError=append:/var/log/smartflow-worker.log
 
 [Install]
 WantedBy=multi-user.target

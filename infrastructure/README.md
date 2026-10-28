@@ -2,7 +2,7 @@
 
 Create resources manually or with an approved IaC tool in `ap-south-1`; this repository intentionally does not auto-provision billable infrastructure.
 
-1. Create VPC `10.0.0.0/16`, two public subnets and two private subnets across two AZs, and an Internet Gateway. Public route tables point to the IGW. There is deliberately no NAT Gateway.
+1. Create VPC `10.0.0.0/16`, one public subnet and two private subnets across two AZs, and an Internet Gateway. Public route tables point to the IGW. There is deliberately no NAT Gateway.
 2. Create a public Amazon Linux 2023 EC2 `t3.micro` instance with the deployment IAM role, HTTP/80 open to the internet, and SSH/22 restricted to the operator's current IP.
 3. Create a private Single-AZ RDS MySQL `db.t3.micro` with 20 GB where eligible. Its security group permits 3306 only from the EC2 security group.
 4. Create an encrypted, private S3 bucket with public access blocked and a lifecycle rule for old proofs.
