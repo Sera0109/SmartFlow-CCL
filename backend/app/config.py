@@ -55,6 +55,6 @@ def get_settings() -> Settings:
         )
         values = {item["Name"]: item["Value"] for item in response.get("Parameters", [])}
         for field, name in parameter_names.items():
-            if not getattr(settings, field) and name in values:
+            if name in values:  # Parameter Store always wins over defaults in AWS mode
                 setattr(settings, field, values[name])
     return settings
