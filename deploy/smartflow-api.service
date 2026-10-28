@@ -1,0 +1,13 @@
+[Unit]
+Description=SmartFlow FastAPI
+After=network.target
+
+[Service]
+User=smartflow
+WorkingDirectory=/opt/smartflow/backend
+EnvironmentFile=/opt/smartflow/.env
+ExecStart=/opt/smartflow/backend/.venv/bin/uvicorn app.main:app --host 127.0.0.1 --port 8000
+Restart=on-failure
+
+[Install]
+WantedBy=multi-user.target
