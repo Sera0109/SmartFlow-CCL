@@ -105,33 +105,33 @@ SmartFlow follows a hardened three-tier decoupled micro-architecture deployed in
 ```mermaid
 flowchart TD
     subgraph Clients["Presentation Tier"]
-        Customer["Customer (Place / Track Order)"]
-        Agent["Delivery Agent (Status / Proof Upload)"]
-        Admin["Administrator (Operational Analytics)"]
+        Customer["Customer: Place and Track Order"]
+        Agent["Delivery Agent: Status and Proof Upload"]
+        Admin["Administrator: Operational Analytics"]
     end
 
-    subgraph Compute["Application Tier (Amazon EC2 - Amazon Linux 2023)"]
-        Nginx["Nginx Reverse Proxy (Port 80)"]
-        Frontend["React 18 SPA (Vite Static Build)"]
-        FastAPI["FastAPI REST API Server (Uvicorn - Port 8000)"]
-        Worker["Autonomous Assignment Worker (Python / boto3 daemon)"]
+    subgraph Compute["Application Tier - Amazon EC2"]
+        Nginx["Nginx Reverse Proxy - Port 80"]
+        Frontend["React 18 SPA - Vite Static Build"]
+        FastAPI["FastAPI REST API Server - Uvicorn Port 8000"]
+        Worker["Assignment Worker - Python boto3 daemon"]
     end
 
-    subgraph Messaging["Asynchronous Event & Messaging Tier"]
-        SQS[("Amazon SQS Queue\n'smartflow-orders'")]
-        SNS["Amazon SNS Topic\n'smartflow-notify'"]
+    subgraph Messaging["Asynchronous Messaging Tier"]
+        SQS[("Amazon SQS Queue: smartflow-orders")]
+        SNS["Amazon SNS Topic: smartflow-notify"]
     end
 
-    subgraph Storage["Persistence & Object Storage Tier"]
-        RDS[("Amazon RDS MySQL 8.0\n(Private Subnets)")]
-        S3[("Amazon S3 Bucket\n(Encrypted Proof of Delivery)")]
+    subgraph Storage["Persistence and Object Storage Tier"]
+        RDS[("Amazon RDS MySQL 8.0: Private Subnets")]
+        S3[("Amazon S3 Bucket: Encrypted Delivery Proof")]
     end
 
-    subgraph Governance["Security, Config & Telemetry Tier"]
-        SSM["AWS SSM Parameter Store\n(/smartflow/*)"]
-        CW["Amazon CloudWatch Logs & Alarms\n(API & Worker Streams)"]
-        Budgets["AWS Budgets\n($5 Monthly Guardrail)"]
-        IAM["IAM Instance Profile\n(SmartFlowEC2Role)"]
+    subgraph Governance["Security, Config and Telemetry Tier"]
+        SSM["AWS SSM Parameter Store: /smartflow/*"]
+        CW["Amazon CloudWatch: Logs and Alarms"]
+        Budgets["AWS Budgets: 5 USD Monthly Limit"]
+        IAM["IAM Instance Profile: SmartFlowEC2Role"]
     end
 
     %% Client flows
@@ -144,28 +144,28 @@ flowchart TD
     Nginx -->|Proxies /api/* to Loopback| FastAPI
 
     %% Ingestion
-    FastAPI -->|Write Order & History| RDS
+    FastAPI -->|Write Order and History| RDS
     FastAPI -->|Enqueue Order ID| SQS
     FastAPI -->|Upload Proof Image| S3
     FastAPI -->|Read Config at Boot| SSM
 
     %% Worker Processing
     Worker -->|20s Long Polling| SQS
-    Worker -->|Lock & Update Order / Agent| RDS
+    Worker -->|Lock and Update Order| RDS
     Worker -->|Publish Status Alerts| SNS
     Worker -->|Delete Handled Message| SQS
 
-    %% Telemetry & Roles
+    %% Telemetry and Roles
     FastAPI -.->|Ship Logs| CW
     Worker -.->|Ship Logs| CW
-    IAM -.->|Grants Least-Privilege| Compute
+    IAM -.->|Grants Least Privilege| Compute
     Budgets -.->|Alerts on Spikes| SNS
 ```
 
 ### AWS Cloud Infrastructure & Network Design
 
 ```mermaid
-graph TB
+flowchart TD
     subgraph Internet["Public Internet"]
         Users["Users / Clients (Browser)"]
         AdminUser["DevOps Admin (SSH)"]
@@ -175,40 +175,41 @@ graph TB
         subgraph VPC["Custom VPC: smartflow-vpc (10.0.0.0/16)"]
             IGW["Internet Gateway"]
 
-            subgraph PublicSubnet["Public Subnet (10.0.1.0/24) [AZ: ap-south-1a]"]
-                direction TB
+            subgraph PublicSubnet["Public Subnet (10.0.1.0/24) - AZ: ap-south-1a"]
                 subgraph SG_EC2["Security Group: smartflow-ec2-sg"]
-                    EC2["EC2 t3.micro (Amazon Linux 2023)\n- Nginx (Port 80)\n- FastAPI (127.0.0.1:8000)\n- Systemd Assignment Worker\n- CloudWatch Agent"]
+                    EC2["EC2 t3.micro - Amazon Linux 2023: Nginx, FastAPI, SQS Worker"]
                 end
             end
 
-            subgraph PrivateSubnets["Private Subnets (No Internet Route)"]
-                subgraph PrivSubnetA["Private Subnet A (10.0.2.0/24) [ap-south-1a]"]
+            subgraph PrivateSubnets["Private Subnets - No Internet Route"]
+                subgraph PrivSubnetA["Private Subnet A (10.0.2.0/24) - AZ: ap-south-1a"]
+                    DBZoneA["RDS Subnet ap-south-1a"]
                 end
-                subgraph PrivSubnetB["Private Subnet B (10.0.3.0/24) [ap-south-1b]"]
+                subgraph PrivSubnetB["Private Subnet B (10.0.3.0/24) - AZ: ap-south-1b"]
+                    DBZoneB["RDS Subnet ap-south-1b"]
                 end
                 subgraph SG_RDS["Security Group: smartflow-rds-sg"]
-                    RDS["Amazon RDS MySQL db.t3.micro\n(Single-AZ, Non-Public)"]
+                    RDS[("Amazon RDS MySQL db.t3.micro - Single-AZ, Private")]
                 end
             end
         end
 
-        subgraph ManagedAWS["Managed AWS Regional Services (Accessible via IAM Instance Role)"]
-            S3["Amazon S3 Bucket\n(Private, AES-256)"]
-            SQS["Amazon SQS Queue\n(smartflow-orders)"]
-            SNS["Amazon SNS Topic\n(smartflow-notify)"]
-            SSM["AWS SSM Parameter Store\n(/smartflow/*)"]
-            CW["Amazon CloudWatch\n(Logs, Alarms, Dashboard)"]
+        subgraph ManagedAWS["Managed AWS Regional Services (Accessed via IAM Role)"]
+            S3[("Amazon S3 Bucket - Private, AES-256")]
+            SQS[("Amazon SQS Queue - smartflow-orders")]
+            SNS["Amazon SNS Topic - smartflow-notify"]
+            SSM["AWS SSM Parameter Store - /smartflow/*"]
+            CW["Amazon CloudWatch - Logs, Alarms, Dashboard"]
         end
     end
 
     %% Networking connections
-    Users -->|HTTP: Port 80| IGW
-    AdminUser -->|SSH: Port 22 (Whitelisted IP)| IGW
+    Users -->|HTTP Port 80| IGW
+    AdminUser -->|SSH Port 22 - Whitelisted Admin IP| IGW
     IGW -->|Route 0.0.0.0/0| EC2
-    EC2 -->|MySQL: Port 3306 ONLY| RDS
-    PrivSubnetA -.-> RDS
-    PrivSubnetB -.-> RDS
+    EC2 -->|MySQL Port 3306 only| RDS
+    DBZoneA -.-> RDS
+    DBZoneB -.-> RDS
 
     %% AWS API Endpoint connections
     EC2 -->|HTTPS via IAM Role| S3
@@ -228,32 +229,32 @@ SmartFlow enforces a strict mathematical Finite State Machine (FSM). Any attempt
 
 ```mermaid
 stateDiagram-v2
-    [*] --> Placed : POST /orders (Customer)
-    Placed --> Assigned : Worker picks best agent (SQS event)
-    Assigned --> OutForDelivery : POST /orders/{id}/out-for-delivery (Agent)
-    OutForDelivery --> Delivered : POST /orders/{id}/proof (JPEG Upload)
-    Delivered --> [*] : Delivery Completed & Agent Released
+    [*] --> Placed : Customer places order
+    Placed --> Assigned : SQS worker assigns best agent
+    Assigned --> OutForDelivery : Agent marks out for delivery
+    OutForDelivery --> Delivered : Agent uploads JPEG delivery proof
+    Delivered --> [*] : Delivery completed and agent released
     
     note right of Placed
         Status recorded in delivery_status
-        Enqueued to SQS
+        Order ID enqueued to SQS
     end note
 
     note right of Assigned
-        Locked via SELECT ... FOR UPDATE
-        Agent marked 'Busy'
+        Locked via SELECT FOR UPDATE
+        Agent marked Busy
         SNS assignment email sent
     end note
 
     note right of OutForDelivery
-        Driver is en route to destination
+        Agent is en route to destination
         Awaiting photographic proof
     end note
 
     note right of Delivered
-        Binary header verified (\xff\xd8\xff)
-        Stored in S3 (proof/order-{id}.jpg)
-        Agent status set back to 'Free'
+        Binary header verified (FF D8 FF)
+        Proof stored in private S3 bucket
+        Agent marked Free
         SNS delivery email sent
     end note
 ```
@@ -476,7 +477,7 @@ erDiagram
         int id PK
         varchar name
         varchar email UK
-        enum status "Free, Busy, Offline"
+        string status "Free / Busy / Offline"
         double lat
         double lng
     }
@@ -488,7 +489,7 @@ erDiagram
         double pickup_lat
         double pickup_lng
         varchar drop_address
-        enum status "Placed, Assigned, Out for Delivery, Delivered"
+        string status "Placed / Assigned / Out for Delivery / Delivered"
         int agent_id FK
         timestamp created_at
     }
